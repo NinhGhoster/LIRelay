@@ -1,8 +1,8 @@
-# LiRelay — Agent Guide
+# LIRelay — Agent Guide
 
 ## Project
 
-Live Lingua Relay — macOS live translation audio bridge using Gemini Live Translate.
+LIRelay — macOS live translation audio bridge using Gemini Live Translate.
 
 **Repo:** https://github.com/NinhGhoster/LIRelay
 

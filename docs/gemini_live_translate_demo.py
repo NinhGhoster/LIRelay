@@ -3,7 +3,7 @@
 Reference: Google Gemini Live Translate demo (original example).
 Source: https://github.com/google-gemini/cookbook/blob/main/quickstarts/Get_started_LiveTranslate.py
 
-This is the starting-point code that LiRelay refactors.
+This is the starting-point code that LIRelay refactors.
 """
 
 import os
