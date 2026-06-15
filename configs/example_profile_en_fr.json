@@ -1,0 +1,28 @@
+{
+  "profile_name": "English-French Call Bridge",
+  "model": "models/gemini-3.5-live-translate-preview",
+  "my_language": "en",
+  "other_person_language": "fr",
+  "incoming": {
+    "input_device": "Call Audio Virtual Device",
+    "output_device": "External Headphones",
+    "target_language_code": "en"
+  },
+  "outgoing": {
+    "input_device": "MacBook Microphone",
+    "output_device": "Virtual Microphone",
+    "target_language_code": "fr"
+  },
+  "audio": {
+    "send_sample_rate": 16000,
+    "receive_sample_rate": 24000,
+    "channels": 1,
+    "chunk_size": 1024
+  },
+  "features": {
+    "push_to_talk": false,
+    "mute_original_audio": true,
+    "show_transcript": true,
+    "latency_monitor": true
+  }
+}
