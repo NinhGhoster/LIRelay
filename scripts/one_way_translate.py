@@ -25,11 +25,11 @@ async def main() -> None:
         target_language=args.target_language,
     )
     try:
-        await pipeline.start()
+        await pipeline.run()
     except KeyboardInterrupt:
         pass
     finally:
-        await pipeline.stop()
+        await pipeline.disconnect()
 
 
 if __name__ == "__main__":
