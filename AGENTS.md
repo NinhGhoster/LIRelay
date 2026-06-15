@@ -4,6 +4,8 @@
 
 Live Lingua Relay — macOS live translation audio bridge using Gemini Live Translate.
 
+**Repo:** https://github.com/NinhGhoster/LIRelay
+
 ## Environment
 
 ```bash
