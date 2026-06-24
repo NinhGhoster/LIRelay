@@ -57,7 +57,8 @@ docs/                 # Architecture and troubleshooting
 1. Audio device discovery + passthrough PoC
 2. One-way Gemini translation
 3. Two-way bridge
-4. CLI refinement + SwiftUI frontend
+4. Desktop GUI (customtkinter)
+5. SwiftUI native app (future)
 
 ## GUI App
 
