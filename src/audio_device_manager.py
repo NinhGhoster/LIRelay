@@ -51,7 +51,7 @@ class AudioDeviceManager:
                 )
         return devices
 
-    def find_device(self, name_or_index: str) -> Optional[AudioDeviceInfo]:
+    def find_device(self, name_or_index: str, kind: str = "any") -> Optional[AudioDeviceInfo]:
         try:
             index = int(name_or_index)
             info = self._pya.get_device_info_by_index(index)
@@ -67,6 +67,10 @@ class AudioDeviceManager:
         for i in range(self._pya.get_device_count()):
             info = self._pya.get_device_info_by_index(i)
             if name_or_index.lower() in info["name"].lower():
+                if kind == "input" and info["maxInputChannels"] == 0:
+                    continue
+                if kind == "output" and info["maxOutputChannels"] == 0:
+                    continue
                 return AudioDeviceInfo(
                     index=i,
                     name=info["name"],
@@ -86,12 +90,25 @@ class AudioDeviceManager:
             frames_per_buffer=chunk_size,
         )
 
-    def open_output_stream(self, device_index: int, sample_rate: int = 24000, chunk_size: int = 1024):
-        return self._pya.open(
-            format=pyaudio.paInt16,
-            channels=1,
-            rate=sample_rate,
-            output=True,
-            output_device_index=device_index,
-            frames_per_buffer=chunk_size,
+    def open_output_stream(self, device_index: int, sample_rate: int = 24000, chunk_size: int = 1024, channels: int = 2):
+        info = self._pya.get_device_info_by_index(device_index)
+        rates = [sample_rate]
+        if int(info["defaultSampleRate"]) not in rates:
+            rates.append(int(info["defaultSampleRate"]))
+        for rate in rates:
+            for ch in (channels, 1):
+                try:
+                    return self._pya.open(
+                        format=pyaudio.paInt16,
+                        channels=ch,
+                        rate=rate,
+                        output=True,
+                        output_device_index=device_index,
+                        frames_per_buffer=chunk_size,
+                    ), ch
+                except (OSError, ValueError):
+                    continue
+        raise RuntimeError(
+            f"Cannot open output device {device_index} ({info['name']}) "
+            f"at any sample rate/channel combination"
         )

@@ -1,3 +1,4 @@
+import array
 import asyncio
 import logging
 from typing import Optional
@@ -31,10 +32,10 @@ class TranslationPipeline:
         self._running = False
 
     async def connect(self) -> None:
-        self._in_dev = self._mgr.find_device(self.input_device)
+        self._in_dev = self._mgr.find_device(self.input_device, kind="input")
         if not self._in_dev:
             raise ValueError(f"Input device not found: {self.input_device}")
-        self._out_dev = self._mgr.find_device(self.output_device)
+        self._out_dev = self._mgr.find_device(self.output_device, kind="output")
         if not self._out_dev:
             raise ValueError(f"Output device not found: {self.output_device}")
 
@@ -53,15 +54,29 @@ class TranslationPipeline:
         finally:
             in_stream.close()
 
+    @staticmethod
+    def _mono_to_stereo(mono_data: bytes) -> bytes:
+        samples = array.array('h')
+        samples.frombytes(mono_data)
+        stereo = array.array('h')
+        for s in samples:
+            stereo.extend([s, s])
+        return stereo.tobytes()
+
     async def play_task(self) -> None:
         assert self._out_dev is not None
-        out_stream = self._mgr.open_output_stream(self._out_dev.index, RECEIVE_SAMPLE_RATE, CHUNK_SIZE)
+        out_channels = min(self._out_dev.channels_out, 2) or 2
+        out_stream, out_channels = self._mgr.open_output_stream(
+            self._out_dev.index, RECEIVE_SAMPLE_RATE, CHUNK_SIZE, channels=out_channels,
+        )
         try:
             while self._running:
                 async for response in self._session.receive():
                     if not self._running:
                         break
                     if data := response.data:
+                        if out_channels > 1:
+                            data = self._mono_to_stereo(data)
                         await asyncio.to_thread(out_stream.write, data)
                     if text := response.text:
                         print(f"\n[{self.name}] {text}")

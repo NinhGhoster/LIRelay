@@ -16,15 +16,17 @@ class BridgeController:
         self.incoming = incoming_pipeline
         self.outgoing = outgoing_pipeline
 
-    async def start(self) -> None:
+    async def start(self, enable_outgoing: bool = True) -> None:
         await self.incoming.connect()
-        await self.outgoing.connect()
+        if enable_outgoing:
+            await self.outgoing.connect()
 
         async with asyncio.TaskGroup() as tg:
             tg.create_task(self.incoming.capture_task())
             tg.create_task(self.incoming.play_task())
-            tg.create_task(self.outgoing.capture_task())
-            tg.create_task(self.outgoing.play_task())
+            if enable_outgoing:
+                tg.create_task(self.outgoing.capture_task())
+                tg.create_task(self.outgoing.play_task())
 
     async def stop(self) -> None:
         await self.incoming.disconnect()

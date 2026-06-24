@@ -28,7 +28,7 @@ async def passthrough(input_device: str, output_device: str, duration: int) -> N
         print(f"Passthrough running for {duration}s... Press Ctrl+C to stop.")
 
         in_stream = mgr.open_input_stream(in_dev.index, SEND_SAMPLE_RATE, CHUNK_SIZE)
-        out_stream = mgr.open_output_stream(out_dev.index, RECEIVE_SAMPLE_RATE, CHUNK_SIZE)
+        out_stream, _ = mgr.open_output_stream(out_dev.index, RECEIVE_SAMPLE_RATE, CHUNK_SIZE)
 
         start = asyncio.get_event_loop().time()
         while True:

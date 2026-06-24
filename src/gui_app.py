@@ -55,6 +55,7 @@ class BridgeRunner:
         outgoing_input: str,
         outgoing_output: str,
         outgoing_target: str,
+        enable_outgoing: bool = True,
     ) -> None:
         self._stop_event.clear()
         self._running = True
@@ -67,6 +68,7 @@ class BridgeRunner:
                 outgoing_input,
                 outgoing_output,
                 outgoing_target,
+                enable_outgoing,
             ),
             daemon=True,
         )
@@ -90,9 +92,11 @@ class BridgeRunner:
         outgoing_input: str,
         outgoing_output: str,
         outgoing_target: str,
+        enable_outgoing: bool = True,
     ) -> None:
         self._push_status("incoming", "starting")
-        self._push_status("outgoing", "starting")
+        if enable_outgoing:
+            self._push_status("outgoing", "starting")
         asyncio.run(
             self._bridge_task(
                 incoming_input,
@@ -101,11 +105,13 @@ class BridgeRunner:
                 outgoing_input,
                 outgoing_output,
                 outgoing_target,
+                enable_outgoing,
             )
         )
         self._running = False
         self._push_status("incoming", "stopped")
-        self._push_status("outgoing", "stopped")
+        if enable_outgoing:
+            self._push_status("outgoing", "stopped")
         self._push_status("bridge", "stopped")
 
     async def _bridge_task(
@@ -116,6 +122,7 @@ class BridgeRunner:
         outgoing_input: str,
         outgoing_output: str,
         outgoing_target: str,
+        enable_outgoing: bool = True,
     ) -> None:
         incoming = TranslationPipeline(
             name="incoming",
@@ -129,26 +136,30 @@ class BridgeRunner:
             output_device=outgoing_output,
             target_language=outgoing_target,
         )
-        bridge = BridgeController(incoming, outgoing)
 
         try:
             await incoming.connect()
             self._push_status("incoming", "connected")
-            await outgoing.connect()
-            self._push_status("outgoing", "connected")
+            if enable_outgoing:
+                await outgoing.connect()
+                self._push_status("outgoing", "connected")
+            else:
+                self._push_status("outgoing", "disabled")
 
             async with asyncio.TaskGroup() as tg:
                 tg.create_task(self._poll_stop(incoming, outgoing))
                 tg.create_task(incoming.capture_task())
                 tg.create_task(incoming.play_task())
-                tg.create_task(outgoing.capture_task())
-                tg.create_task(outgoing.play_task())
+                if enable_outgoing:
+                    tg.create_task(outgoing.capture_task())
+                    tg.create_task(outgoing.play_task())
         except Exception as e:
             logger.exception("Bridge error")
             self._push_status("bridge", f"error: {e}")
         finally:
             await incoming.disconnect()
-            await outgoing.disconnect()
+            if enable_outgoing:
+                await outgoing.disconnect()
 
     async def _poll_stop(self, incoming, outgoing) -> None:
         while not self._stop_event.is_set():
@@ -237,10 +248,10 @@ class LIRelayApp(ctk.CTk):
             ("outgoing_output", "Outgoing (virtual mic):"),
         ]
         defaults = {
-            "incoming_input": "BlackHole",
+            "incoming_input": "BlackHole 2ch",
             "incoming_output": "Haut-parleurs",
             "outgoing_input": "MacBook",
-            "outgoing_output": "BlackHole",
+            "outgoing_output": "BlackHole 16ch",
         }
 
         for i, (key, label) in enumerate(labels, start=1):
@@ -255,11 +266,26 @@ class LIRelayApp(ctk.CTk):
             menu.grid(row=i, column=1, padx=10, pady=4, sticky="ew")
             self._dev_widgets[key] = menu
 
+        refresh_btn = ctk.CTkButton(
+            dev_frame,
+            text="↻ Refresh Devices",
+            command=self._refresh_devices_ui,
+        )
+        refresh_btn.grid(row=len(labels) + 1, column=0, columnspan=2, padx=10, pady=(4, 8), sticky="ew")
+
         # -- Controls --
         ctrl_frame = ctk.CTkFrame(self)
         ctrl_frame.grid(row=4, column=0, pady=10, padx=20, sticky="ew")
         ctrl_frame.grid_columnconfigure(0, weight=1)
         ctrl_frame.grid_columnconfigure(1, weight=1)
+
+        self._receive_only = ctk.CTkCheckBox(
+            ctrl_frame,
+            text="Receive only (no mic)",
+            onvalue=True,
+            offvalue=False,
+        )
+        self._receive_only.grid(row=0, column=0, columnspan=2, padx=8, pady=(8, 0), sticky="w")
 
         self._start_btn = ctk.CTkButton(
             ctrl_frame,
@@ -269,14 +295,14 @@ class LIRelayApp(ctk.CTk):
             hover_color="#237030",
             command=self._toggle_bridge,
         )
-        self._start_btn.grid(row=0, column=0, padx=8, pady=8, sticky="ew")
+        self._start_btn.grid(row=1, column=0, padx=8, pady=8, sticky="ew")
 
         self._swap_btn = ctk.CTkButton(
             ctrl_frame,
             text="⇄  Swap Languages",
             command=self._swap_languages,
         )
-        self._swap_btn.grid(row=0, column=1, padx=8, pady=8, sticky="ew")
+        self._swap_btn.grid(row=1, column=1, padx=8, pady=8, sticky="ew")
 
         # -- Status --
         status_frame = ctk.CTkFrame(self)
@@ -306,6 +332,13 @@ class LIRelayApp(ctk.CTk):
         spacer = ctk.CTkLabel(self, text="")
         spacer.grid(row=6, column=0, sticky="ew")
 
+    def _refresh_devices_ui(self) -> None:
+        self._refresh_devices()
+        for key, menu in self._dev_widgets.items():
+            is_output = "output" in key
+            choices = self._devices_output if is_output else self._devices_input
+            menu.configure(values=choices)
+
     def _pick_default(self, choices: List[str], hint: str) -> str:
         for c in choices:
             if hint.lower() in c.lower():
@@ -333,6 +366,7 @@ class LIRelayApp(ctk.CTk):
                 outgoing_input=outgoing_input,
                 outgoing_output=outgoing_output,
                 outgoing_target=outgoing_target,
+                enable_outgoing=not self._receive_only.get(),
             )
             self._start_btn.configure(text="■  Stop Bridge", fg_color="#b32424")
             self._swap_btn.configure(state="disabled")

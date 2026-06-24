@@ -18,13 +18,15 @@ async def main() -> None:
     inc.add_argument("--incoming-target", required=True, help="Incoming target language code")
 
     out = parser.add_argument_group("Outgoing (you → caller)")
-    out.add_argument("--outgoing-input", required=True, help="Your microphone device")
-    out.add_argument("--outgoing-output", required=True, help="Virtual mic device for call")
-    out.add_argument("--outgoing-target", required=True, help="Outgoing target language code")
+    out.add_argument("--outgoing-input", help="Your microphone device (omit for receive-only)")
+    out.add_argument("--outgoing-output", help="Virtual mic device for call (omit for receive-only)")
+    out.add_argument("--outgoing-target", help="Outgoing target language code (omit for receive-only)")
 
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
     args = parser.parse_args()
     setup_logging("DEBUG" if args.verbose else "INFO")
+
+    enable_outgoing = bool(args.outgoing_input and args.outgoing_output and args.outgoing_target)
 
     incoming = TranslationPipeline(
         name="incoming",
@@ -34,15 +36,16 @@ async def main() -> None:
     )
     outgoing = TranslationPipeline(
         name="outgoing",
-        input_device=args.outgoing_input,
-        output_device=args.outgoing_output,
-        target_language=args.outgoing_target,
+        input_device=args.outgoing_input or "",
+        output_device=args.outgoing_output or "",
+        target_language=args.outgoing_target or "",
     )
     bridge = BridgeController(incoming, outgoing)
 
     try:
-        print("Starting bridge... Press Ctrl+C to stop.")
-        await bridge.start()
+        mode = "receive-only" if not enable_outgoing else "two-way"
+        print(f"Starting bridge in {mode} mode... Press Ctrl+C to stop.")
+        await bridge.start(enable_outgoing=enable_outgoing)
     except KeyboardInterrupt:
         pass
     finally:

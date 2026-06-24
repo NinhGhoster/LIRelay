@@ -8,6 +8,7 @@ from google.genai import types
 
 from src.config import DEFAULT_MODEL, get_gemini_api_key
 
+logging.getLogger("google_genai").setLevel(logging.ERROR)
 logger = logging.getLogger(__name__)
 
 
