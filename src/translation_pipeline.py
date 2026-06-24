@@ -57,13 +57,14 @@ class TranslationPipeline:
         assert self._out_dev is not None
         out_stream = self._mgr.open_output_stream(self._out_dev.index, RECEIVE_SAMPLE_RATE, CHUNK_SIZE)
         try:
-            async for response in self._session.receive():
-                if not self._running:
-                    break
-                if data := response.data:
-                    await asyncio.to_thread(out_stream.write, data)
-                if text := response.text:
-                    print(f"\n[{self.name}] {text}")
+            while self._running:
+                async for response in self._session.receive():
+                    if not self._running:
+                        break
+                    if data := response.data:
+                        await asyncio.to_thread(out_stream.write, data)
+                    if text := response.text:
+                        print(f"\n[{self.name}] {text}")
         finally:
             out_stream.close()
 

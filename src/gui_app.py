@@ -346,7 +346,7 @@ class LIRelayApp(ctk.CTk):
     def _poll_status(self) -> None:
         try:
             while True:
-                key, value = self._status_queue.get_nowait()
+                key, value = self._runner.status_queue.get_nowait()
                 if key in self._status_labels:
                     self._status_labels[key].configure(text=value)
         except queue.Empty:

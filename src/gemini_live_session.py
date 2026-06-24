@@ -16,7 +16,7 @@ class GeminiLiveSession:
         self,
         target_language: str = "en",
         model: str = DEFAULT_MODEL,
-        echo_target_language: bool = True,
+        echo_target_language: bool = False,
     ) -> None:
         self._model = model
         self._target_language = target_language
