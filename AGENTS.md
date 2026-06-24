@@ -17,6 +17,9 @@ PYTHONPATH=. python scripts/list_audio_devices.py
 PYTHONPATH=. python scripts/audio_passthrough.py -i "MacBook" -o "Haut-parleurs"
 PYTHONPATH=. python scripts/one_way_translate.py -i "MacBook" -o "Haut-parleurs" -l en
 
+# GUI app (desktop window with dropdowns)
+PYTHONPATH=. python scripts/run_app.py     # requires `brew install python-tk`
+
 # Two-way bridge (needs BlackHole installed)
 PYTHONPATH=. python scripts/bridge_cli.py \
   --incoming-input "BlackHole 2ch" --incoming-output "Haut-parleurs" --incoming-target en \
@@ -47,7 +50,8 @@ src/audio_device_manager.py   — enumerate/select CoreAudio devices
 src/gemini_live_session.py    — wraps Gemini Live Translate lifecycle
 src/translation_pipeline.py   — one-direction: device → Gemini → device
 src/bridge_controller.py      — runs two pipelines in parallel
-scripts/                      — CLI entry points (not package, hence PYTHONPATH)
+src/gui_app.py                — customtkinter desktop GUI (threads BridgeRunner)
+scripts/                      — CLI + GUI entry points (not package, hence PYTHONPATH)
 configs/                      — language profiles (reference only, not wired to CLI)
 ```
 

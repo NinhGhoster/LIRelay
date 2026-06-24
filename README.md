@@ -59,6 +59,16 @@ docs/                 # Architecture and troubleshooting
 3. Two-way bridge
 4. CLI refinement + SwiftUI frontend
 
+## GUI App
+
+Desktop GUI with language/device dropdowns, Start/Stop, and status indicators:
+
+```bash
+PYTHONPATH=. python scripts/run_app.py
+```
+
+Requires `brew install python-tk` if you get a `_tkinter` import error.
+
 ## Development
 
 ```bash
